@@ -1,0 +1,963 @@
+---
+title: "Exploração de dados Goiás"
+author: "Aline Mendonça,Brisne Velasquez,Renata Santos"
+output:
+  html_document:
+    df_print: paged
+---
+```{r setup, include=FALSE, echo=FALSE}
+knitr::opts_chunk$set(echo = TRUE,message = F,warning = F)
+```
+
+##Parte I - Importação de Dados
+
+##Importação das abas do DataSet
+```{r echo=FALSE}
+
+library(readxl) #Pacote para ler xls
+
+caminho="D:/Users/201811332-10/Downloads/Base_MUNIC_2017_xls/Base MUNIC 2017.xls"
+
+#install.packages("readxl") comando para instalar o pacote
+brprefeito=read_excel(caminho, sheet = "Informações atual prefeito", na = "Não informou")
+#vieww(brprefeito)
+brrh=read_excel(caminho, sheet = "Recursos humanos", na = "-")
+#vieww(brrh)
+brhabitacao=read_excel(caminho, sheet = "Habitação", na = "-")
+#vieww(brhabitacao)
+brtransporte=read_excel(caminho, sheet = "Transporte", na = "-")
+#vieww(brtransporte)
+bragropecuaria=read_excel(caminho, sheet = "Agropecuária", na = "-")
+#vieww(bragropecuaria)
+brmeioambiente=read_excel(caminho, sheet = "Meio ambiente", na = "-")
+#vieww(brmeioambiente)
+brrisco=read_excel(caminho, sheet = "Gestão de risco", na = "-")
+#vieww(brrisco)
+brvarexterna=read_excel(caminho, sheet = "Variáveis externas")
+#vieww(brvarexterna)
+```
+
+## Selecionando os dados dos Municípios de Goías
+```{r echo=FALSE}
+
+goprefeito=brprefeito[brprefeito$CodMun>5200000 & brprefeito$CodMun<5300000, ]
+gorh=brrh[brrh$CodMun>5200000 & brrh$CodMun<5300000, ]
+gohabitacao=brhabitacao[brhabitacao$CodMun>5200000 & brhabitacao$CodMun<5300000, ]
+gotransporte=brtransporte[brtransporte$CodMun>5200000 & brtransporte$CodMun<5300000, ]
+goagropecuaria=bragropecuaria[bragropecuaria$CodMun>5200000 & bragropecuaria$CodMun<5300000, ]
+gomeioambiente=brmeioambiente[brmeioambiente$CodMun>5200000 & brmeioambiente$CodMun<5300000, ]
+gorisco=brrisco[brrisco$CodMun>5200000 & brrisco$CodMun<5300000, ]
+govarexterna=brvarexterna[brvarexterna$CodMun>5200000 & brvarexterna$CodMun<5300000, ]
+
+```
+
+
+## Criando um único banco de dados exclusivo dos municipios de Goiás
+```{r echo=FALSE}
+#Juntandos todas as abas
+go=cbind(goprefeito,gorh,gohabitacao,gotransporte,goagropecuaria,gomeioambiente,gorisco,govarexterna)
+
+#Retirando as colunas repetidas
+go=go[,c(-8,-9,-23,-24,-71,-72,-133,-134,-285,-286,-394,-395,-529,-531,-532)]
+```
+
+##Análise dos dados
+
+##GOIÁS
+
+```{r echo=FALSE}
+knitr::include_graphics("Goias2.PNG")
+```
+
+
+##População Goiânia
+
+##Como é a distribuição por faixas da população dos municípios goiânios?
+```{r echo=FALSE}
+barplot(as.matrix(prop.table(table(go[,520]))),main="Distribuição dos municípios por faixa de habitantes",legend.text = T)
+```
+
+
+60% dos municípios goiânios possui até 10 mil habitantes.
+
+##Quantos habitantes há nos municípios goianos desconsiderandos os outliars?
+```{r echo=FALSE}
+boxplot(as.numeric(go[,519]),main="População dos municípios de Goiás",outline = F)
+
+cod_mun_tot=read_excel("D:/Users/201811332-10/Downloads/codigo_municipios_2018_ibge.xls", sheet = "Municípios")
+Var_externas=read_excel(caminho, sheet = "Variáveis externas")
+colnames(cod_mun_tot)=c("UF","COD_UF","COD_MUN","NOME_MUN")
+Goias_mun=cod_mun_tot[cod_mun_tot$UF=="GO",];#Goias_mun;#str(Goias_mun)
+cod_Go=Goias_mun$COD_UF[1];cod_Go;cod_mun=Goias_mun$COD_MUN;#cod_mun
+gove=Var_externas[substr(Var_externas$CodMun,1,2)==cod_Go,];#gove;#str(gove)
+colnames(gove)=c("codnum","geriao","coduf","uf","nom_mun","pop","claspop")
+
+gove$pop=as.numeric(gove$pop)
+gove=gove[order(gove$pop,decreasing = FALSE),]
+c_pop=unique(gove$claspop)
+#summary(gove$pop)
+
+classe1=gove[gove$pop<=5000,]
+classe2=gove[(5001<gove$pop) & (gove$pop<=10000),]
+classe3=gove[(10001<gove$pop) & (gove$pop <=20000),]
+classe4=gove[(20001<gove$pop) & (gove$pop <=50000),]
+classe5=gove[(50001<gove$pop) & (gove$pop <=100000),]
+classe6=gove[(100001<gove$pop) & (gove$pop <=500000),]
+classe7=gove[gove$pop  >500000,]
+
+n=length(gove$pop)
+p=c(round(length(classe1$pop)/n*100,2),
+    round(length(classe2$pop)/n*100,2),
+    round(length(classe3$pop)/n*100,2),
+    round(length(classe4$pop)/n*100,2),
+    round(length(classe5$pop)/n*100,2),
+    round(length(classe6$pop)/n*100,2),
+    round(length(classe7$pop)/n*100,2))
+
+l_p=NULL
+for(i in 1:7){
+l_p[i]= paste0(c_pop[i],"   (",p[i],"%)")}
+
+par(mfrow = c(1,1)) #cola um gr?fico embaixo do outro
+
+# print("--------------------------------------")
+# print("Estatísticas da População de Goais   ")
+# print("--------------------------------------")
+# summary(gove$pop)
+# print("O Município com menor população é Anhanguerae com mais populado a capital Goiánia ")
+
+#par(op)
+par(bg="white") 
+par(fg="black") 
+par(col.main="black") 
+par(col.lab="white") 
+par(col.axis="white") 
+
+pie(p,main="População de Goias em 2017",col=c(2,3,4,5,6,7,8,9),labels=l_p)
+# 
+# par(bg="blue") 
+# par(fg="white") 
+# par(col.main="white") 
+# par(col.lab="white") 
+# par(col.axis="white") 
+# hist(classe1$pop,main=c_pop[1],xlab="População",ylab="Frequencia")
+# 
+# par(bg="blue") 
+# par(fg="white") 
+# par(col.main="white") 
+# par(col.lab="white") 
+# par(col.axis="white") 
+# hist(classe2$pop,main=c_pop[2],xlab="PopulaÃ§Ã£o",ylab="Frequencia")
+# 
+# par(bg="blue") 
+# par(fg="white") 
+# par(col.main="white") 
+# par(col.lab="white") 
+# par(col.axis="white") 
+# hist(classe3$pop,main=c_pop[3],xlab="População",ylab="Frequencia")
+# 
+# par(bg="blue") 
+# par(fg="white") 
+# par(col.main="white") 
+# par(col.lab="white") 
+# par(col.axis="white") 
+# hist(classe4$pop,main=c_pop[4],xlab="População",ylab="Frequencia")
+# 
+# par(bg="blue") 
+# par(fg="white") 
+# par(col.main="white") 
+# par(col.lab="white") 
+# par(col.axis="white") 
+# hist(classe5$pop,main=c_pop[5],xlab="População",ylab="Frequencia")
+# 
+# par(bg="blue") 
+# par(fg="white") 
+# par(col.main="white") 
+# par(col.lab="white") 
+# par(col.axis="white") 
+# hist(classe6$pop,main=c_pop[6],xlab="População",ylab="Frequencia")
+# 
+# par(bg="blue") 
+# par(fg="white") 
+# par(col.main="white") 
+# par(col.lab="white") 
+# par(col.axis="white") 
+# hist(classe7$pop,main=c_pop[7],xlab="População",ylab="Frequencia")
+# 
+# ```
+# 
+# 
+# Desconsiderando os outliars há em média 8 mil habitantes nos municípios goiânios.
+# 
+# ##Qual é a população total de Goiás?
+# ```{r echo=FALSE}
+# #total de habitantes 
+# totalhab=sum(as.numeric(go[,519]))
+# hab=go[,519]
+# #Ordenando a quantidade de habitantes
+# hab=hab[order(hab,decreasing = T)]
+# #quantidade de habitantes de Goiânia
+# goiania=hab[1]
+# #percentual dos habitantes de Goiás em Goiânia
+# goianiaperc=round(hab[1]/totalhab*100,2)
+
+```
+
+
+Goiás possui 6.778.772 habitantes, sendo 1.466.105 (21,63%) vivendo em Goiânia, a capital do Estado. 
+
+
+##Perfil dos Prefeitos dos Municípios de Goiás
+
+##Qual é a Idade dos Prefeitos dos Municípios de Goiás?
+```{r echo=FALSE}
+go$MPEG04[as.character(go$MPEG04)=="Não informou"]="NA"
+go$MPEG04=as.character(go$MPEG04)
+hist(as.numeric(go$MPEG04),main="Histograma das Idades dos Prefeitos",xlab="Idade")
+```
+
+
+Mais de 50% possui entre 40 e 60 anos.
+
+## Qual é a Idade dos Prefeitos dos Municípios de Goiás?
+```{r echo=FALSE}
+boxplot(as.numeric(go$MPEG04))
+```
+
+
+A idade média dos prefeitos é 50 anos.
+
+##Qual é o percentual de prefeito eleito por partido?
+```{r echo=FALSE}
+barplot(sort(round(prop.table(table(go$MPEG06))*100,2),decreasing = T),type="l",horiz=F,main="Percentual de Prefeito Eleito por Partido",xlab="Partido",ylab="Percentual",col="red",cex.names = 0.5)
+```
+
+
+O PSDB e o PMDB elegeram quase 50% dos prefeitos de Goiás.
+
+##Qual é o percentual de prefeitos re-eleitos?
+```{r echo=FALSE}
+re_eleito=pie(prop.table(table(go$MPEG02)),main="Prefeitos re-eleitos")
+``````
+
+
+Aproximadamente 1/3 dos prefeitos foram re-eleitos.
+
+##Qual é o percentual de prefeito re-eleito por partido?
+```{r echo=FALSE}
+re_eleito_part=round(prop.table(table(go$MPEG06,go$MPEG02),1)*100,2)
+re_eleito_part
+re_eleito_part2=round(prop.table(table(go$MPEG06,go$MPEG02),2)*100,2)
+re_eleito_part2
+```
+
+
+O PSDB re-elegeu 45% dos prefeitos de Goiás.
+
+##Qual é o nivel médio de escolaridade dos Prefeitos de Goiás?
+```{r echo=FALSE}
+par(mar=c(5,14,4,4)) #desloca o gráfico
+barplot(sort(round(prop.table(table(go$MPEG05))*100,2),decreasing = T),col="black",horiz=T, 
+         main="Escolaridade do Prefeito",las=2.5,cex.names = 0.8)
+```
+
+
+Mais de 40% dos prefeitos eleitos possuem Ensino Superior Completo.
+
+##Qual é a distribuição do sexo dos prefeitos?
+```{r echo=FALSE}
+sexo=pie(prop.table(table(go$MPEG03)),main="Sexo dos Prefeitos",legend.text = T)
+```
+
+
+Apenas 15% dos prefeitos eleitos são do sexo feminino.
+
+##Recursos humanos por vínculo
+
+##Como é a composição do quadro de pessoal da administração direta dos três Municípios que percentualmente menos possuem funcionários estatutários em Goiás?
+```{r echo=FALSE}
+adm_direta_etiqueta=c("Estatutario","Celetista","Somente_comissionados","Estagiarios","Sem_vinculo_permanente","Total")
+colnames(go)[c(8:13)]=adm_direta_etiqueta 
+adm_direta=data.frame(PEstat=round(as.numeric(go$Estatutario)/as.numeric(go$Total),2),
+                      PCelest=round(as.numeric(go$Celetista)/as.numeric(go$Total),2),
+                      PComis=round(as.numeric(go$Somente_comissionados)/as.numeric(go$Total),2),
+                      PEstag=round(as.numeric(go$Estagiarios)/as.numeric(go$Total),2),
+                      PSVinc=round(as.numeric(go$Sem_vinculo_permanente)/as.numeric(go$Total),2),
+                      Total=as.numeric(go$Total))
+row.names(adm_direta)=go[,518]
+adm_direta=adm_direta[order(adm_direta$PEstat,decreasing = F),]
+
+barplot(t(as.matrix(adm_direta[c(1,2,3),-6])), legend =adm_direta_etiqueta[-6],args.legend = list(x = "bottomleft"),main="Composição da Administração Direta")
+```
+
+
+Lagoa Santa não possui funcionários estatutários atuando na Adminitração Direta.
+Aragarças e Davinópolis possuem aproximadamente 30% dos funcionários estatutários.
+
+##Como é a composição do quadro de pessoal da administração direta do Estado de Goiás?
+```{r echo=FALSE}
+GODireta=c(sum(as.numeric(go$Estatutario)),sum(as.numeric(go$Celetista),NA,na.rm = T),sum(as.numeric(go$Somente_comissionados),na.rm = T),sum(as.numeric(go$Estagiarios),na.rm = T),sum(as.numeric(go$Sem_vinculo_permanente),na.rm = T),sum(as.numeric(go$Total)))
+
+GODiretaPerc=c(round((GODireta[1]/GODireta[6]),2),round((GODireta[2]/GODireta[6]),2),round((GODireta[3]/GODireta[6]),2),round((GODireta[4]/GODireta[6]),2),round((GODireta[5]/GODireta[6]),2))
+
+barplot(as.matrix(GODiretaPerc), legend =adm_direta_etiqueta[-6],main="Composição da Administração Direta Municipal")
+
+
+```
+
+
+Aproximadamente 25% dos funcionários não é estatutário.
+
+##Quantos funcinários Estatutários há na Administração Direta dos Municípios de Goiás?
+```{r echo=FALSE}
+boxplot(as.numeric(go$Estatutario),outline = F,main="Estatutários na Administração Direta Municípal")
+```
+
+
+Há em média 200 estatutátios na administração direta municipal.
+
+##Quantos funcinários Celetistas há na Administração Direta dos Municípios de Goiás?
+```{r echo=FALSE}
+boxplot(as.numeric(go$Celetista),outline = T,main="Celetistas na Administração Direta Municípal")
+#Alterando o nome da coluna NOME MUNIC
+x1=c("NOME_MUNIC")
+colnames(go)[518]=x1
+#Selecionando os municípios que possuem celetistas
+SCelet=which(as.numeric(go$Celetista)>0)
+#Quantidade de municípios que possuem celetistas
+length(SCelet)
+#Percentual de municípios que possuem celetistas
+round(length(SCelet)/length(go$Celetista)*100,2)
+#Criando um data frame com os municípios que possuem celetistas
+Celet=data.frame(table(SCelet))
+row.names(Celet)= go[c(SCelet),518]
+Celet=Celet[order(Celet$SCelet),]
+#vieww(Celet)
+```
+
+
+Em apenas 21 (8,5%) municípios há celetistas na administração direta municipal.
+
+##Quantos funcinários Comissionados há na Administração Direta dos Municípios de Goiás?
+```{r echo=FALSE}
+boxplot(as.numeric(go$Somente_comissionados),outline = F,main="Comissionados na Administração Direta Municípal")
+```
+
+
+Há em média 75 comissionados na administração direta municipal.
+
+##Quantos Estagiários há na Administração Direta dos Municípios de Goiás?
+```{r echo=FALSE}
+boxplot(as.numeric(go$Estagiarios),outline = T,main="Estagiários na Administração Direta Municípal")
+#Selecionando os municípios que possuem estagiários
+SEstag=which(as.numeric(go$Estagiarios)>0)
+#Quantidade de municípios que possuem estagiários
+length(SEstag)
+#Percentual de municípios que possuem estagiários
+round(length(SEstag)/length(go$Estagiarios)*100,2)
+#Criando um data frame com os municípios que possuem estagiários
+Estag=data.frame(table(SEstag))
+row.names(Estag)= go[c(SEstag),518]
+Estag=Estag[order(Estag$SEstag),]
+#vieww(Estag)
+```
+
+
+Há estagiários em 55 (21%) municípios atuando na administração direta.
+
+##Quantos funcionários sem vínculo permanente há na Administração Direta dos Municípios de Goiás?
+```{r echo=FALSE}
+boxplot(as.numeric(go$Sem_vinculo_permanente),outline = F,main="Sem vínculo permanente na Administração Direta Municípal")
+```
+
+
+Há em média 20 funcionários sem vínculo permanente na Administração Direta Municipal.
+
+##Quantos funcionários sem vínculo permanente há na Administração Direta dos Municípios de Goiás?
+```{r echo=FALSE}
+boxplot(as.numeric(go$Total),outline = F,main="Total de Funcionários na Administração Direta Municípal")
+```
+
+
+Há em média 350 funcionários ao todo na administração Direta Municipal.
+
+##Percentual de Municípios que possuem quadro de pessoal da administração indireta
+```{r echo=FALSE}
+indireta=pie(prop.table(table(go$MREH02)),main="Possui quadro de pessoal da administração indireta",legend.text = T)
+prop.table(table(go$MREH02))
+```
+
+
+28% dos municípios possuem administração indireta.
+
+
+##Como é a composição do quadro de pessoal da administração indireta dos três Municípios que percentualmente menos possuem funcionários estatutários em Goíás?
+```{r echo=FALSE}
+adm_indireta_etiqueta=c("Estatutario2","Celetista2","Somente_comissionados2","Estagiarios2","Sem_vinculo_permanente2","Total2")
+colnames(go)[c(15:20)]=adm_indireta_etiqueta 
+adm_indireta=data.frame(
+      PEstat2=round(as.numeric(go$Estatutario2[go$MREH02=="Sim"])/as.numeric(go$Total2[go$MREH02=="Sim"]),2),
+      PCelest2=round(as.numeric(go$Celetista2[go$MREH02=="Sim"])/as.numeric(go$Total2[go$MREH02=="Sim"]),2),
+      PComis2=round(as.numeric(go$Somente_comissionados2[go$MREH02=="Sim"])/as.numeric(go$Total2[go$MREH02=="Sim"]),2),
+      PEstag2=round(as.numeric(go$Estagiarios2[go$MREH02=="Sim"])/as.numeric(go$Total2[go$MREH02=="Sim"]),2),
+      PSVinc2=round(as.numeric(go$Sem_vinculo_permanente2[go$MREH02=="Sim"])/as.numeric(go$Total2[go$MREH02=="Sim"]),2),
+      Total2=as.numeric(go$Total2[go$MREH02=="Sim"]))
+
+#Selecionando apenas os Municípios que possuem quadro de pessoal da administração indireta
+Sindireta=which(go$MREH02=="Sim")
+
+row.names(adm_indireta)=go[c(Sindireta),518]
+adm_indireta=adm_indireta[order(adm_indireta$PEstat,decreasing = F),]
+
+barplot(t(as.matrix(adm_indireta[c(1,2,3),-6])), legend =adm_indireta_etiqueta[-6],args.legend = list(x = "bottom"),main="Composição da Administração Indireta")
+```
+
+##Como é a composição do quadro de pessoal da administração indireta do Estado de Goiás?
+```{r echo=FALSE}
+#Total de funcionário por categoria
+GOIndireta=c(sum(as.numeric(go$Estatutario2[go$MREH02=="Sim"]),NA,na.rm = T),
+             sum(as.numeric(go$Celetista2[go$MREH02=="Sim"]),NA,na.rm = T),
+             sum(as.numeric(go$Somente_comissionados2[go$MREH02=="Sim"]),na.rm = T),
+             sum(as.numeric(go$Estagiarios2[go$MREH02=="Sim"]),na.rm = T),
+             sum(as.numeric(go$Sem_vinculo_permanente2[go$MREH02=="Sim"]),na.rm = T),
+             sum(as.numeric(go$Total2[go$MREH02=="Sim"])))
+#Percentual de funcionários por categoria
+GOIndiretaPerc=c(round((GOIndireta[1]/GOIndireta[6]),2),
+                 round((GOIndireta[2]/GOIndireta[6]),2),
+                 round((GOIndireta[3]/GOIndireta[6]),2),
+                 round((GOIndireta[4]/GOIndireta[6]),2),
+                 round((GOIndireta[5]/GOIndireta[6]),2))
+GOIndiretaPerc
+#Gráfico da composição da administração indireta municipal
+barplot(as.matrix(GOIndiretaPerc), legend =adm_indireta_etiqueta[-6],main="Composição da Administração Indireta Municipal")
+```
+
+
+Aproximadamente 50% dos funcionários que atuam na administração indireta municipal são celetistas.
+
+##Quantos funcinários Estatutários há na Administração Indireta dos Municípios de Goiás?
+```{r echo=FALSE}
+boxplot(as.numeric(go$Estatutario2),outline = F,main="Estatutários na Administração Indireta Municípal")
+#Selecionando os municípios que possuem estatutários
+SEstat2=which(as.numeric(go$Estatutario2)>0)
+#Quantidade de municípios que possuem estatutários
+length(SEstat2)
+#Percentual de municípios que possuem estatutários
+round(length(SEstat2)/length(go$Estatutario2)*100,2)
+#Criando um data frame com os municípios que possuem estatutários
+Estat2=data.frame(table(SEstat2))
+row.names(Estat2)= go[c(SEstat2),518]
+Estat2=Estat2[order(Estat2$SEstat2),]
+#vieww(Estat2)
+
+```
+
+
+Há 56 (23%) municípios que possuem estatuários na Administração Indireta
+
+##Quantos funcinários Celetistas há na Administração Indireta dos Municípios de Goiás?
+```{r echo=FALSE}
+boxplot(as.numeric(go$Celetista2),outline = T,main="Celetistas na Administração Indireta Municípal")
+#Selecionando os municípios que possuem Celetistas
+SCelet2=which(as.numeric(go$Celetista2)>0)
+#Quantidade de municípios que possuem Celetistas
+length(SCelet2)
+#Percentual de municípios que possuem Celetistas
+round(length(SCelet2)/length(go$Celetista2)*100,2)
+#Criando um data frame com os municípios que possuem Celetistas
+Celet2=data.frame(table(SCelet2))
+row.names(Celet2)= go[c(SCelet2),518]
+Celet2=Celet2[order(Celet2$SCelet2),]
+#vieww(Celet2)
+```
+
+
+Apenas 2 (0,8%) municípios (Goiânia(95) e Abadiânia(2)) possuem celetistas na administração indireta.
+
+##Quantos funcinários Comissionados há na Administração Indireta dos Municípios de Goiás?
+```{r echo=FALSE}
+boxplot(as.numeric(go$Somente_comissionados2),outline = F,main="Comissionados na Administração Indireta Municípal")
+#Selecionando os municípios que possuem Comissionados
+SComis2=which(as.numeric(go$Somente_comissionados2)>0)
+#Quantidade de municípios que possuem Comissionados
+length(SComis2)
+#Percentual de municípios que possuem Comissionados
+round(length(SComis2)/length(go$Somente_comissionados2)*100,2)
+#Criando um data frame com os municípios que possuem Comissionados
+Comis2=data.frame(table(SComis2))
+row.names(Comis2)= go[c(SComis2),518]
+Comis2=Comis2[order(Comis2$SComis2),]
+#vieww(Comis2)
+```
+
+
+Há funcionários comissionados em 34(13,82%) municipios na administração indireta.
+
+##Quantos estagiários há na Administração Indireta dos Municípios de Goiás?
+```{r echo=FALSE}
+boxplot(as.numeric(go$Estagiarios2),outline = T,main="Estagiários na Administração Indireta Municípal")
+#Selecionando os municípios que possuem Estagiários
+SEstag2=which(as.numeric(go$Estagiarios2)>0)
+#Quantidade de municípios que possuem Estagiários
+length(SEstag2)
+#Percentual de municípios que possuem Estagiários
+round(length(SEstag2)/length(go$Estagiarios2)*100,2)
+#Criando um data frame com os municípios que possuem Estagiários
+Estag2=data.frame(table(SEstag2))
+row.names(Estag2)= go[c(SEstag2),518]
+Estag2=Estag2[order(Estag2$SEstag2),]
+#vieww(Estag2)
+
+```
+
+
+Há estagiários em 3 (1,22%) municípios (Itumbiara(124),Goiatuba(98) e Anápolis
+(16)) na administração indireta.
+
+##Quantos funcionários sem vínculo permanente há na Administração Indireta dos Municípios de Goiás?
+```{r echo=FALSE}
+boxplot(as.numeric(go$Sem_vinculo_permanente2),outline = F,main="Sem vínculo permanente na Administração Indireta Municípal")
+#Selecionando os municípios que possuem funcionários sem vínculo permanente.
+SSVinc2=which(as.numeric(go$Sem_vinculo_permanente2)>0)
+#Quantidade de municípios que possuem funcionários sem vínculo permanente.
+length(SSVinc2)
+#Percentual de municípios que possuem funcionários sem vínculo permanente.
+round(length(SSVinc2)/length(go$Sem_vinculo_permanente2)*100,2)
+#Criando um data frame com os municípios que possuem funcionários sem vínculo permanente.
+SVinc2=data.frame(table(SSVinc2))
+row.names(SVinc2)= go[c(SSVinc2),518]
+SVinc2=SVinc2[order(SVinc2$SSVinc2),]
+#vieww(SVinc2)
+
+```
+
+
+Há funcionários sem vínculo permanente em 23 (9,35%) municípios na administração indireta.
+
+##Quantos funcionários ao todo há na Administração Indireta dos Municípios de Goiás?
+```{r echo=FALSE}
+boxplot(as.numeric(go$Total2),outline = F,main="Total na Administração Indireta Municípal")
+#Selecionando os municípios que possuem funcionários na administração indireta.
+STotal2=which(as.numeric(go$Total2)>0)
+#Quantidade de municípios que possuem funcionários na administração indireta.
+length(STotal2)
+#Percentual de municípios que possuem funcionários na administração indireta.
+round(length(STotal2)/length(go$Total2)*100,2)
+#Criando um data frame com os municípios que possuem funcionários na administração indireta.
+Total2=data.frame(table(STotal2))
+row.names(Total2)= go[c(STotal2),518]
+Total2=Total2[order(Total2$STotal2),]
+#vieww(Total2)
+```
+
+
+Há funcionários na administração indireta em 69 (28,05%) municipios.
+
+##Transporte   
+
+##Qual é  o quadro percentual  dos serviços de transporte de passageiros existente no municípios?
+```{r echo=FALSE}
+exemplo_4 <- cbind(prop.table(table(go$MTRA181)),
+prop.table(table(go$MTRA182)),
+prop.table(table(go$MTRA183)),
+prop.table(table(go$MTRA184)),
+prop.table(table(go$MTRA185)),
+prop.table(table(go$MTRA186)),
+prop.table(table(go$MTRA187)),
+prop.table(table(go$MTRA188)))
+
+colnames(exemplo_4) <- c("Barco", "Metrô", "Mototáxi", 
+                         "Táxi", "Trêm", "Van",
+                         "Avião", "Outro")
+
+exemplo_4[2,2] = 0
+exemplo_4[2,5] = 0
+exemplo_4[1,8] = 0
+
+par(mar=c(2,2,4,4))
+
+barplot(exemplo_4, beside = F, legend.text = T, 
+        main = "Relação  dos serviços de transporte de passageiros existente nos municípios",
+        col = c("lightblue1", "grey"),cex.names = 0.75, font.main = 2, cex.main=1)
+
+```
+
+Pobulação conta basicamente com táxis. 
+
+Chama atenção a ausência de ônibus como opção de resposta 
+
+##Agropecuária
+
+##A prefeitura desenvolve programa ou ação de estímulo à agricultura familiar?
+```{r echo=FALSE}
+exemplo5 <- cbind(prop.table((table(go$MAGR171))),
+prop.table(table(go$MAGR172)),
+prop.table(table(go$MAGR173)),
+prop.table(table(go$MAGR174)),
+prop.table(table(go$MAGR175)))
+
+colnames(exemplo5) <- c("Agricultura orgânica", "Agricultura familiar", "Aquicultura", 
+                         "Pesca", "Prod. de hortas
+                        comunitárias")
+
+par(mar=c(5,8,4,8))
+
+barplot(exemplo5, beside = T, legend.text = T, 
+        main = "Relação  dos programas ou ações da prefeitura ao estímulo da:",
+        col = c("grey","lightblue1"),cex.names = 0.7, font.main = 2, cex.main=1, las=2, horiz = T)
+```
+
+
+Sim, em pouco mais de 60% dos municípios.
+
+
+##Qual o percentual da existência de servidor em quadro efetivo, com a responsabilidade de levantar e arquivar informações estatísticas sobre a agropecuária municipal?
+```{r echo=FALSE}
+exemplo5_1 <- prop.table(table(go$MAGR38))
+
+exemplo5_1 <- as.matrix(exemplo5_1)
+
+colnames(exemplo5_1) <- c("MAGR38")
+
+par(mar=c(9,9,5,3))
+
+barplot(exemplo5_1, 
+        legend.text = T, beside = T, font.main = 2, cex.main=0.8,
+        main = "Relação da existência de servidor em quadro efetivo,
+        com a responsabilidade de levantar e arquivar informações estatísticas
+        sobre a agropecuária municipal",
+        col = c( "grey","lightblue1"), horiz = T)
+
+```
+
+
+Existem em cerca de 10% de servidores em quadro efetivo, com a responsabilidade de levantar e arquivar informações estatísticas sobre a agropecuária municipal.
+
+##A prefeitura efetivamente faz o levantamento de estatísticas sobre a agropecuária municipal?
+```{r echo=FALSE}
+exemplo5_6 <- prop.table(table(go$MAGR39))
+
+exemplo5_6 <- as.matrix(exemplo5_6)
+
+colnames(exemplo5_6) <- c("MAGR39")
+
+par(mar=c(9,9,5,3))
+
+barplot(exemplo5_6, 
+        legend.text = T, beside = T, font.main = 2, cex.main=0.8,
+        main = "A prefeitura efetivamente faz o levantamento de estatísticas
+        sobre a agropecuária municipal?",
+        col = c( "grey","lightblue1"), horiz = T)
+
+```
+
+
+Só em menos de 20% dos municípios.
+
+##Qual o percentual de  titulares do órgão gestor da política agropecuária do sexo feminino?
+```{r echo=FALSE}
+#Sexo
+
+exemplo5_3 <-sort(prop.table(table(go$MAGR04)),decreasing = T )
+
+exemplo5_3 <- as.matrix(exemplo5_3)
+par(mar=c(9,9,5,3))
+colnames(exemplo5_3) <- c("MAGR04")
+
+barplot(as.matrix(exemplo5_3), 
+        legend.text = T,beside = F, font.main = 2, cex.main=1,
+        main = "Relação do sexo do titular do órgão gestor 
+        da política agropecuária",
+        col = c("lightblue", "lightblue4"), horiz = T)
+
+```
+
+
+Cerca de 10% são mulheres.
+
+##Percentual de funcionários efetivos com formação voltada para a agropecuária.
+```{r echo=FALSE}
+exemplo5_4 <- prop.table(table(go$MAGR08))
+
+exemplo5_4 <- as.matrix(exemplo5_4)
+
+colnames(exemplo5_4) <- c("MAGR08")
+par(mar=c(9,9,5,3))
+barplot(as.matrix(exemplo5_4), 
+        legend.text = T, beside = F, font.main = 2, cex.main=1,
+        main = "Relação de funcionários efetivos com formação 
+        voltada para a agropecuária",
+        col = c( "grey","lightblue1"), horiz = T)
+```
+
+
+Cerca de 35% dos municípios possuem funcionários efetivos com formação voltada para a agropecuária.
+
+##Qual o percentual da existência  de  programa ou ação de estímulo à Agricultura orgânica?
+```{r echo=FALSE}
+exemplo5_5 <- prop.table(table(go$MAGR171))
+
+exemplo5_5 <- as.matrix(exemplo5_5)
+
+colnames(exemplo5_5) <- c("MAGR171")
+par(mar=c(9,9,5,3))
+barplot(as.matrix(exemplo5_5), 
+        legend.text = T, beside = F, font.main = 2, cex.main=1,
+        main = "Relação da existência  de  programa ou ação de 
+        estímulo à agricultura orgânica",
+        col = c( "grey","lightblue1"), horiz = T)
+```
+
+
+Cerca de 35% dos municípios possuem programa ou ação de estímulo à Agricultura orgânica.
+
+##Meio ambiente  
+
+##Qual o percentual de municípios que possuem Plano de Gestão Integrada de Resíduos Sólidos?
+```{r echo=FALSE}
+
+exemplo6 <- sort(prop.table(table(go$MMAM21)), decreasing = T)
+
+exemplo6 <- as.matrix(exemplo6)
+
+colnames(exemplo6) <- c("MMAM21")
+par(mar=c(9,9,5,3))
+barplot(exemplo6, 
+        legend.text = T, beside = T, font.main = 2, cex.main=0.8,
+        main = "Relação dos municípios que possuem Plano de Gestão Integrada de Resíduos Sólidos,
+        nos termos da Política Nacional de Resíduos Sólidos",
+        col = c("lightblue1", "grey"), horiz = T)
+
+```
+
+
+Mais de 60% dos municípios possuem plano de Gestão Integrada de Resíduos Sólidos.
+
+##Qual o percentual da existência de Legislação ou instrumento de gestão ambiental sobre a fauna silvestre?
+```{r echo=FALSE}
+
+exemplo6_1 <- prop.table(table(go$MMAM208))
+
+exemplo6_1 <- as.matrix(exemplo6_1)
+
+colnames(exemplo6_1) <- c("MMAM208")
+par(mar=c(9,9,5,3))
+barplot(exemplo6_1, 
+        legend.text = T, beside = T, font.main = 2, cex.main=0.8,
+        main = "Legislação ou instrumento de gestão ambiental existente no município,
+        mesmo que esteja inserido na Lei Orgânica, Plano Diretor, Código Ambiental em relação a
+        existência de legislação ou instrumento de gestão ambiental sobre fauna silvestre",
+        col = c( "grey","lightblue1"), horiz = T)
+
+
+```
+
+
+
+Um pouco menos de 30% dos municípios possuem legislação ou instrumento de gestão ambiental sobre a fauna silvestre.
+
+##Qual o percentual da existência de Legislação ou instrumento de gestão ambiental sobre destino das embalagens de produtos agrotóxicos nos municípios?
+```{r echo=FALSE}
+exemplo6_2 <- prop.table(table(go$MMAM205))
+
+exemplo6_2 <- as.matrix(exemplo6_2)
+
+colnames(exemplo6_2) <- c("MMAM205")
+par(mar=c(9,9,5,3))
+barplot(exemplo6_2, 
+        legend.text = T, beside = T, font.main = 2, cex.main=0.8,
+        main = "Relação da existência de legislação ou instrumento de gestão ambiental sobre 
+        destino das embalagens utilizadas em produtos agrotóxicos",
+        col = c("lightblue1", "grey"), horiz = T)
+```
+
+
+Cerca de 20% dos municípios possuem legislação ou instrumento de gestão ambiental sobre destino das embalagens de produtos agrotóxicos.
+
+##Quais os impactos ambientais e/ou processos/ações de maior ocorrência nos municípios de Goiás?
+```{r echo=FALSE}
+exemplo6_3 <- cbind(prop.table(table(go$MMAM261)),
+prop.table(table(go$MMAM262)),
+prop.table(table(go$MMAM263)),
+prop.table(table(go$MMAM264)),
+prop.table(table(go$MMAM265)),
+prop.table(table(go$MMAM267)),
+prop.table(table(go$MMAM268)),
+prop.table(table(go$MMAM269)),
+prop.table(table(go$MMAM2610)),
+prop.table(table(go$MMAM2611)),
+prop.table(table(go$MMAM2612)),
+prop.table(table(go$MMAM2614)))
+
+
+
+colnames(exemplo6_3) <- c("secas ou enxurradas", "Poluição do ar", "Poluição de algum 
+                          corpo d’água", 
+                         "Diminuição de vazão 
+                         de corpo d’água", "Desmatamentos", "Queimadas",
+                         "Contaminação do solo", "Perda de solos ","Degradação de áreas
+                         legalmente protegidas","Diminuição da 
+                         biodiversidade","Moradia em situação
+                         de risco", "Falta de saneamento")
+
+par(mar=c(2,8,2,8))
+barplot(exemplo6_3, beside = F, legend.text = T, horiz = T,xpd = T,
+        main = "Relação  dos impactos ambientais e/ou processos/ações de maior ocorrência",
+        col = c("grey", "lightblue1"),cex.names = 0.6, font.main = 2, cex.main=1, las=2)
+```
+
+
+
+Os impactos ambientais e/ou processos/ações de maior ocorrência são:
+Desmatamento e queimada.
+
+##Qual a porcentagem de municípios que participaram de capacitação promovida pelo governo federal na área de meio ambiente nos últimos 4 anos?
+```{r echo=FALSE}
+
+exemplo6_4 <- prop.table(table(go$MMAM08))
+
+exemplo6_4 <- as.matrix(exemplo6_4)
+
+colnames(exemplo6_4) <- c("MMAM08")
+par(mar=c(9,9,5,3))
+barplot(exemplo6_4, 
+        legend.text = T, beside = T, font.main = 2, cex.main=0.8,
+        main = "Participação em capacitação promovida pelo governo federal na 
+        área do meio ambiente nos últimos 4 anos",
+        col = c("lightblue1", "grey"), horiz = T)
+```
+
+
+Cerca de 30% dos municípios participaram de capacitação promovida pelo governo federal na área de meio ambiente.
+
+##Gestão de riscos e resposta a desastres
+
+##Qual a porcentagem de municípios atingidos por secas nos últimos 4 anos?
+```{r echo=FALSE}
+exemplo7_2 <- sort(prop.table(table(go$MGRD01)), decreasing=T)
+
+exemplo7_2 <- as.matrix(exemplo7_2)
+
+colnames(exemplo7_2) <- c("MGRD01")
+par(mar=c(9,9,5,3))
+barplot(exemplo7_2, 
+        legend.text = T, beside = T, font.main = 2, cex.main=0.8,
+        main = "O município foi atingido pela seca nos últimos 4 anos?",
+        col = c("lightblue1", "grey","lightyellow"), horiz = T)
+```
+
+
+Cerca de 30% dos municípios foram atingidos pela seca.
+
+##Qual a porcentagem de municípios atingidos por alagamentos nos últimos 4 anos?
+```{r echo=FALSE}
+exemplo7_4 <- sort(prop.table(table(go$MGRD06)),decreasing = T)
+
+
+exemplo7_4 <- as.matrix(exemplo7_4)
+
+colnames(exemplo7_4) <- c("MGRD06")
+par(mar=c(9,9,5,3))
+barplot(exemplo7_4, 
+        legend.text = T, beside = T, font.main = 2, cex.main=0.8,
+        main = "O município foi atingido por alagamentos nos últimos 4 anos?",
+        col = c("lightblue1", "grey","lightyellow"), horiz = T)
+```
+
+
+Menos de 10% dos Municípios foram atingidos por alagamentos nos últimos 4 anos
+
+##Os municípios do estado de Goiás implementaram intervenções para minimizar as enchentes ou inundações graduais?
+```{r echo=FALSE}
+exemplo7_5 <- cbind(prop.table(table(go$MGRD1051)),
+                    prop.table(table(go$MGRD1052)),
+                    prop.table(table(go$MGRD1053)),
+                    prop.table(table(go$MGRD1054)),
+                    prop.table(table(go$MGRD1055)),
+                    prop.table(table(go$MGRD1056)),
+                    prop.table(table(go$MGRD1057)),
+                    prop.table(table(go$MGRD1058)),
+                    prop.table(table(go$MGRD1059)),
+                    prop.table(table(go$MGRD10510)),
+                    prop.table(table(go$MGRD10511)))
+
+colnames(exemplo7_5) <- c("Barragem à montante[...]", "canais de macrodrenagens", "Construção de parque", 
+                         "reservatórios de amortecimento
+                         de cheias", "Desassoreamento de 
+                         corpos hídricos", "desvio de cursos d’água","Realocação da 
+                         população
+                         que vive em área de risco", "Revegetação ","Revitalização de 
+                         rios ou bacias","Outra solução","Nenhuma intervenção")
+
+exemplo7_5[2,7] = 0
+exemplo7_5[1,11] = 0
+
+
+par(mar=c(2,8,2,1))
+
+barplot(exemplo7_5, beside = F, legend.text = T, horiz = T, 
+        main = "Ações para evitar ou minimizar os danos causados por enchentes ou inundações graduais",
+        col = c("lightblue1", "grey"),cex.names = 0.6, font.main = 2, cex.main=0.7, las=2)
+```
+
+
+
+Todos os municípios respondentes fizeram alguma intervenção.
+
+##Qual a porcentagem da existência de Unidades de corpo de bombeiros nos municípios?
+```{r echo=FALSE}
+
+exemplo7_6 <- cbind(prop.table(table(go$MGRD201)),
+                    prop.table(table(go$MGRD202)),
+                    prop.table(table(go$MGRD203)))
+                   # prop.table(table(go$MGRD204)),
+                  #prop.table(table(go$MGRD205)))
+
+exemplo7_6
+
+colnames(exemplo7_6) <- c("Unidade do Corpo 
+de Bombeiros", "Coordenação
+Municipal de Defesa Civil
+(COMDECs)", "Núcleo de Defesa 
+Civil (NUDECs)") 
+                     #    "Nenhuma das citadas", "Não sabe")
+
+#exemplo7_6[1,4] = 0
+#exemplo7_6[1,5] = 0
+
+
+par(mar=c(10,8,2,1))
+
+barplot(exemplo7_6, beside = F,horiz = F, legend.text = T, 
+        main = "Em relação à gestão de riscos e resposta a desastres,
+existe no município:",
+        col = c( "grey","lightblue1"),cex.names = 0.6, font.main = 2, cex.main=1, las=1)
+
+```
+
+
+Mais de 60% dos municípios possuem Unidade de corpo de bombeiros.
+
+##Os municípios do estado de Goiás possuem plano de contingência em relação ao gerenciamento de riscos de desastres decorrentes de enchentes ou inundações graduais,ou enxurradas ou inundações bruscas?
+```{r echo=FALSE}
+exemplo7_3 <- prop.table(table(go$MGRD184))
+
+exemplo7_3 <- as.matrix(exemplo7_3)
+
+colnames(exemplo7_3) <- c("MGRD184")
+par(mar=c(12,1,4,1))
+barplot(exemplo7_3, 
+        legend.text = T, beside = F, font.main = 2, cex.main=0.8,
+        main = "
+        
+        Relação dos municípios com plano de contingência
+        em relação ao gerenciamento de riscos de desastres 
+        decorrentes de enchentes ou inundações graduais,
+        ou enxurradas ou inundações bruscas.
+",
+        col = c("lightblue1", "grey"), horiz = T)
+```
+
+
+Mais de 90% dos municípios não possuem o plano de contingência.
+
