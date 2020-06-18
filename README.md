@@ -5,5 +5,5 @@ Foi realizada a análise exploratória dos dados dos municípios de Goiás, onde
 -----------------------------------------------------------------------------------------------------------------------------------------
 # Segue abaixo algumas imagens retiradas do arquivo HTML gerado pelo R Studio.
 
-
+![Black and White Music Mood Board Photo Collage](https://user-images.githubusercontent.com/49541299/84979098-fa90ca80-b104-11ea-8c04-43abce506a53.png)
 
