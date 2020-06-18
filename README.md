@@ -1,8 +1,9 @@
 # Project_R_IBGE
-Projeto realizado na ENCE - IBGE.
-Foi realizada a análise exploratória dos dados dos municípios de Goiás, onde as informações foram retiradas do Censo, no formato xls, e importados para o R Studio, onde foram feitas as análises através de aproximadamente 20 gráficos.
+Projeto  ENCE - IBGE.       
+-----------------------------------------------------------------------------------------------------------------------------------------
+Foi realizada a análise exploratória dos dados dos municípios de Goiás, onde as informações foram retiradas do Censo, no formato xls, e importados para o R Studio. 
 
-#Segue abaixo algumas imagens retiradas do arquivo HTML gerado pelo R Studio.
+# Segue abaixo algumas imagens retiradas do arquivo HTML gerado pelo R Studio.
 
 ![goias1](https://user-images.githubusercontent.com/49541299/84968716-8ac31580-b0ed-11ea-9f4d-e86a098f7395.jpg)
 
